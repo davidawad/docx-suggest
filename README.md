@@ -1,6 +1,6 @@
 # docx-suggest
 
-Turn the difference between two documents into a suggestions .docx: every change is a tracked insertion or deletion you can accept or reject in Word, with optional comments carrying clickable links.
+Turn any two drafts (docx, md, org) into a Word suggestions copy: tracked changes plus comments with clickable links.
 
 ![Tracked changes rendered from synthetic sample text](docs/showcase/suggestions.png)
 
@@ -38,4 +38,4 @@ Reproduce the screenshot: `docs/showcase/make-screenshots.sh` (see `docs/showcas
 
 ## License
 
-GPL-3.0-or-later. See `LICENSE`.
+MIT. See `LICENSE`.

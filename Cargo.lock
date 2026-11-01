@@ -234,6 +234,7 @@ dependencies = [
 [[package]]
 name = "docdiff"
 version = "0.5.1"
+source = "git+https://github.com/davidawad/docdiff?rev=f0590799483af9838afdc0d61ae25ad108c2c53a#f0590799483af9838afdc0d61ae25ad108c2c53a"
 dependencies = [
  "anyhow",
  "blake3",

@@ -29,5 +29,7 @@ pandoc "$tmp/base.md" -o "$tmp/base.docx"
 pandoc "$tmp/revised.md" -o "$tmp/revised.docx"
 docx-suggest "$tmp/base.docx" "$tmp/revised.docx" -o "$tmp/suggestions.docx" \
   --author "Sample Reviewer" --date 2026-01-01T00:00:00Z --comments "$tmp/notes.json"
-soffice --headless --convert-to pdf --outdir "$tmp" "$tmp/suggestions.docx" >/dev/null
-pdftoppm -png -r 80 -f 1 -l 1 -singlefile "$tmp/suggestions.pdf" "$here/suggestions"
+soffice --headless --convert-to 'pdf:writer_pdf_Export:{"ExportNotesInMargin":{"type":"boolean","value":"true"}}' --outdir "$tmp" "$tmp/suggestions.docx" >/dev/null
+pdftoppm -png -r 110 -f 1 -l 1 -singlefile "$tmp/suggestions.pdf" "$tmp/page"
+# crop the blank lower part of the page
+magick "$tmp/page.png" -gravity North -crop 100%x42%+0+0 +repage "$here/suggestions.png"
