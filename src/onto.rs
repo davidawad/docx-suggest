@@ -59,6 +59,7 @@ pub fn reverse(d: &DiffDoc) -> DiffDoc {
         skipped_a: d.skipped_b,
         skipped_b: d.skipped_a,
         normalized: d.normalized,
+        ignored_labels: d.ignored_labels,
         changes: d.changes,
         inserted_words: d.deleted_words,
         deleted_words: d.inserted_words,

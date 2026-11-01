@@ -670,6 +670,8 @@ fn walk_text(nodes: &[Node], mode: Mode, in_ins: bool, in_del: bool, out: &mut S
                         match c.local() {
                             "t" | "delText" => out.push_str(&c.direct_text()),
                             "tab" => out.push('\t'),
+                            "noBreakHyphen" => out.push('\u{2011}'),
+                            "softHyphen" => out.push('\u{ad}'),
                             "br" => out.push('\n'),
                             _ => {}
                         }
@@ -723,7 +725,7 @@ pub fn verify(xml: &[u8], diff: &DiffDoc, a: &[ParaModel], b: &[ParaModel]) -> R
         }
         let same = |g: &str, w: &str| {
             if mode == Mode::Reject && diff.normalized {
-                diff::para_key(g, true) == diff::para_key(w, true)
+                diff::para_key_with(g, true, diff.ignored_labels) == diff::para_key_with(w, true, diff.ignored_labels)
             } else {
                 g == w
             }
