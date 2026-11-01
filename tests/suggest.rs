@@ -342,3 +342,34 @@ fn real_documents_roundtrip() {
         assert!(err.contains(&format!("{n} comments")), "{err}");
     }
 }
+
+fn sample(name: &str) -> PathBuf {
+    Path::new(env!("CARGO_MANIFEST_DIR")).join("examples/sample").join(name)
+}
+
+#[test]
+fn checked_in_sample_renders_onto_revised_and_onto_base() {
+    if Command::new("pandoc").arg("--version").output().is_err() {
+        eprintln!("pandoc missing; skipping");
+        return;
+    }
+    let notes = sample("notes.json");
+    for onto in ["revised", "base"] {
+        let d = Dir::new(onto);
+        let out = d.0.join("out.docx");
+        let r = suggest(
+            &sample("base.docx"),
+            &sample("revised.md"),
+            &out,
+            &["--onto", onto, "--comments", s(&notes), "--author", "Sample Reviewer"],
+            &[],
+        );
+        assert!(r.status.success(), "{onto}: {}", String::from_utf8_lossy(&r.stderr));
+        let p = parts(&out);
+        let xml = text(&p, "word/document.xml");
+        assert!(xml.contains("<w:ins ") && xml.contains("<w:del "), "{onto}");
+        let comments = text(&p, "word/comments.xml");
+        assert_eq!(comments.matches("<w:comment ").count(), 3, "{onto}");
+        assert!(text(&p, "word/_rels/comments.xml.rels").contains("https://example.com/payment-terms"));
+    }
+}

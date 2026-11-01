@@ -14,6 +14,15 @@ Requires `docdiff` on PATH (or `DOCDIFF_BIN`), and `pandoc` for `.md` / `.org` i
 cargo install --git https://github.com/davidawad/docx-suggest
 ```
 
+## Quick start
+
+A made-up services agreement with typos, a wrong year and one reworded clause lives in `examples/sample/` (regenerate with `examples/make-sample.sh`):
+
+```sh
+docx-suggest examples/sample/base.docx examples/sample/revised.md -o suggestions.docx \
+  --comments examples/sample/notes.json --onto base
+```
+
 ## Usage
 
 ```sh
