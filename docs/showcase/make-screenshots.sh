@@ -23,13 +23,13 @@ Payment is due within thirty (30) days of invoice.
 Either party may terminate this Agreement on ninety (90) days' written notice.
 M
 cat > "$tmp/notes.json" <<'M'
-[{"anchor": 1, "body": "Shortened delivery window. See https://example.com/policy", "links": []}]
+[{"anchor": "Services Agreement", "body": "Note on this clause. See https://example.com/policy", "links": []}]
 M
 pandoc "$tmp/base.md" -o "$tmp/base.docx"
 pandoc "$tmp/revised.md" -o "$tmp/revised.docx"
 docx-suggest "$tmp/base.docx" "$tmp/revised.docx" -o "$tmp/suggestions.docx" \
   --author "Sample Reviewer" --date 2026-01-01T00:00:00Z --comments "$tmp/notes.json"
 soffice --headless --convert-to 'pdf:writer_pdf_Export:{"ExportNotesInMargin":{"type":"boolean","value":"true"}}' --outdir "$tmp" "$tmp/suggestions.docx" >/dev/null
-pdftoppm -png -r 110 -f 1 -l 1 -singlefile "$tmp/suggestions.pdf" "$tmp/page"
-# crop the blank lower part of the page
-magick "$tmp/page.png" -gravity North -crop 100%x42%+0+0 +repage "$here/suggestions.png"
+pdftoppm -png -r 170 -f 1 -l 1 -singlefile "$tmp/suggestions.pdf" "$tmp/page"
+# trim the blank page area
+magick "$tmp/page.png" -fuzz 3% -trim +repage -bordercolor white -border 12 "$here/suggestions.png"
