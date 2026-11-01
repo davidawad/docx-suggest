@@ -297,7 +297,7 @@ mod tests {
         let xml = comment_xml(&r, "Test Author", None, "2026-01-01T00:00:00Z", &mut rels);
         assert_eq!(xml.matches("<w:hyperlink ").count(), 2);
         assert_eq!(rels.entries.len(), 2);
-        assert!(xml.contains("w:initials=\"DA\""));
+        assert!(xml.contains("w:initials=\"TA\""));
         assert!(rels.rels_xml_entries().contains("TargetMode=\"External\""));
     }
 

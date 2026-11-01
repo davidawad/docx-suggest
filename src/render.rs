@@ -366,7 +366,12 @@ impl Painter<'_> {
                     out.push(n.clone());
                 }
                 l if is_transparent(l) && atom_count(n) > 0 => {
-                    self.emit_events(events, *cursor, &mut out)?;
+                    // A replacement that starts at the wrapper's first atom
+                    // (deleted text + inserted text) stays inside the wrapper,
+                    // so a link's own text is diffed in place.
+                    if !plan.kinds.get(*cursor).copied().unwrap_or(false) {
+                        self.emit_events(events, *cursor, &mut out)?;
+                    }
                     let inner = self.render_children(plan, events, &e.children, cursor)?;
                     out.push(Node::Elem(Elem {
                         name: e.name.clone(),
