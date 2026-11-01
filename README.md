@@ -1,0 +1,41 @@
+# docx-suggest
+
+Turn the difference between two documents into a suggestions .docx: every change is a tracked insertion or deletion you can accept or reject in Word, with optional comments carrying clickable links.
+
+![Tracked changes rendered from synthetic sample text](docs/showcase/suggestions.png)
+
+The diff itself comes from [docdiff](https://github.com/davidawad/docdiff); docx-suggest only renders it. Accept-all reproduces the revised document and reject-all reproduces the base (checked before the file is written).
+
+## Install
+
+Requires `docdiff` on PATH (or `DOCDIFF_BIN`), and `pandoc` for `.md` / `.org` inputs.
+
+```sh
+cargo install --git https://github.com/davidawad/docx-suggest
+```
+
+## Usage
+
+```sh
+docx-suggest base.docx revised.docx -o suggestions.docx
+docx-suggest base.docx revised.md -o suggestions.docx --onto base   # keep the other side's package
+docx-suggest base.docx revised.docx -o out.docx --comments notes.json
+docx-suggest base.docx revised.docx -o out.docx --diff diff.json    # precomputed `docdiff --emit`
+```
+
+| Option | Env fallback | Default |
+| --- | --- | --- |
+| `--author` | `DOCX_SUGGEST_AUTHOR` | `docx-suggest` |
+| `--email` (written to `word/people.xml`) | `DOCX_SUGGEST_EMAIL` | none |
+| `--initials` | `DOCX_SUGGEST_INITIALS` | first letters of author |
+| `--onto revised\|base` | | `revised` |
+
+Reproduce the screenshot: `docs/showcase/make-screenshots.sh` (see `docs/showcase.md`).
+
+## Tests
+
+`cargo test` (needs `docdiff` on PATH or `DOCDIFF_BIN`).
+
+## License
+
+GPL-3.0-or-later. See `LICENSE`.
