@@ -45,6 +45,12 @@ struct Cli {
     #[arg(long, value_name = "notes.json")]
     comments: Option<PathBuf>,
 
+    /// Fail when a comment body matches this regex but the comment lists no
+    /// `sources` (e.g. a citation pattern: every comment that cites
+    /// something must say where to read it). Repeatable.
+    #[arg(long, value_name = "REGEX")]
+    require_sources_for: Vec<String>,
+
     /// Revision and comment author.
     #[arg(long, value_name = "NAME", env = "DOCX_SUGGEST_AUTHOR", default_value = "docx-suggest")]
     author: String,
@@ -121,6 +127,21 @@ fn main() -> Result<()> {
             .with_context(|| format!("parsing {} (expected a JSON list of notes)", p.display()))?,
         None => Vec::new(),
     };
+    comments::check_sources(&notes)?;
+    let pats = cli
+        .require_sources_for
+        .iter()
+        .map(|p| regex::Regex::new(p).with_context(|| format!("bad --require-sources-for regex {p:?}")))
+        .collect::<Result<Vec<_>>>()?;
+    let missing: Vec<String> = notes
+        .iter()
+        .enumerate()
+        .filter(|(_, n)| n.sources.is_empty())
+        .filter_map(|(i, n)| pats.iter().find_map(|re| re.find(&n.body)).map(|m| format!("note {}: cites {:?} but lists no sources", i + 1, m.as_str())))
+        .collect();
+    if !missing.is_empty() {
+        bail!("comments cite sources without links:\n  {}", missing.join("\n  "));
+    }
     let scratch = cli
         .out
         .parent()

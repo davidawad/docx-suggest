@@ -33,6 +33,50 @@ pub struct Note {
     pub body: String,
     #[serde(default)]
     pub links: Vec<String>,
+    /// What the comment relies on, listed in a separate "Sources" block at
+    /// the end of the comment. Every source must carry a URL the reader can
+    /// open: a source without one is rejected, never rendered.
+    #[serde(default)]
+    pub sources: Vec<Source>,
+}
+
+/// A cited source: a citation (case, statute, document title, ...) and
+/// where to read it.
+#[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Source {
+    /// How the source is cited, e.g. "Foman v. Davis, 371 U.S. 178 (1962)".
+    pub cite: String,
+    /// Pinpoint: page, paragraph or section (optional).
+    #[serde(default)]
+    pub pin: Option<String>,
+    /// Required: an http(s) URL the reader can open.
+    pub url: String,
+}
+
+impl Source {
+    pub fn label(&self) -> String {
+        match &self.pin {
+            Some(p) if !p.trim().is_empty() => format!("{} (at {})", self.cite, p.trim()),
+            _ => self.cite.clone(),
+        }
+    }
+}
+
+/// Every source has a cite and an http(s) URL.
+pub fn check_sources(notes: &[Note]) -> Result<()> {
+    for (i, n) in notes.iter().enumerate() {
+        for s in &n.sources {
+            if s.cite.trim().is_empty() {
+                bail!("note {}: a source has an empty cite", i + 1);
+            }
+            let u = s.url.trim();
+            if !(u.starts_with("https://") || u.starts_with("http://")) || u.len() < 12 {
+                bail!("note {}: source {:?} needs an http(s) URL the reader can open (got {:?})", i + 1, s.cite, s.url);
+            }
+        }
+    }
+    Ok(())
 }
 
 #[derive(Debug, Clone)]
@@ -235,6 +279,26 @@ pub fn comment_xml(r: &Resolved, author: &str, initials_: Option<&str>, date: &s
             format!("<w:p>{anno}{runs}</w:p>")
         })
         .collect();
+    let sources: String = if r.note.sources.is_empty() {
+        String::new()
+    } else {
+        let head = "<w:p><w:r><w:rPr><w:b/></w:rPr><w:t xml:space=\"preserve\">Sources</w:t></w:r></w:p>".to_owned();
+        let items: String = r
+            .note
+            .sources
+            .iter()
+            .map(|s| {
+                let rid = rels.id_for(s.url.trim());
+                format!(
+                    "<w:p>{}{}</w:p>",
+                    text_run(&format!("{}: ", s.label())),
+                    link_run(&rid, s.url.trim())
+                )
+            })
+            .collect();
+        head + &items
+    };
+    let ps = ps + &sources;
     format!(
         "<w:comment w:id=\"{}\" w:author=\"{}\" w:date=\"{}\" w:initials=\"{}\">{ps}</w:comment>",
         r.id,
