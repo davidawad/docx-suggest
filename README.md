@@ -34,10 +34,23 @@ docx-suggest base.docx revised.docx -o out.docx --diff diff.json    # precompute
 
 | Option | Env fallback | Default |
 | --- | --- | --- |
-| `--author` | `DOCX_SUGGEST_AUTHOR` | `docx-suggest` |
+| `--author` | `DOCX_SUGGEST_AUTHOR` | first configured author, else `docx-suggest` |
 | `--email` (written to `word/people.xml`) | `DOCX_SUGGEST_EMAIL` | none |
 | `--initials` | `DOCX_SUGGEST_INITIALS` | first letters of author |
 | `--onto revised\|base` | | `revised` |
+
+### Author whitelist
+
+`$XDG_CONFIG_HOME/docx-suggest/config.toml` (else `~/.config/docx-suggest/config.toml`):
+
+```toml
+[[authors]]
+name = "Jane Doe"
+email = "jane@example.com"
+initials = "JD"   # optional
+```
+
+When `authors` is defined, only a listed identity can be recorded. The first is the default, `--author` must match a listed name or email, a different `--email` is refused, and the listed email is always written. An empty list allows nobody; an unreadable or invalid file is an error. No flag or environment variable overrides it. With no file, or no `authors` key, any author is accepted.
 
 Reproduce the screenshot: `docs/showcase/make-screenshots.sh` (see `docs/showcase.md`).
 

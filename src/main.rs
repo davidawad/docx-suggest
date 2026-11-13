@@ -16,6 +16,7 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 
 mod comments;
+mod config;
 mod onto;
 mod package;
 mod render;
@@ -45,9 +46,11 @@ struct Cli {
     #[arg(long, value_name = "notes.json")]
     comments: Option<PathBuf>,
 
-    /// Revision and comment author.
-    #[arg(long, value_name = "NAME", env = "DOCX_SUGGEST_AUTHOR", default_value = "docx-suggest")]
-    author: String,
+    /// Revision and comment author. Must be listed in the config's `authors`
+    /// when it defines them (the first is then the default); otherwise any
+    /// name, default "docx-suggest".
+    #[arg(long, value_name = "NAME", env = "DOCX_SUGGEST_AUTHOR")]
+    author: Option<String>,
 
     /// Author email, recorded in word/people.xml (the author identity Word
     /// and ONLYOFFICE show). Omitted: no people part is written.
@@ -109,6 +112,12 @@ fn read_diff(path: &Path) -> Result<DiffDoc> {
 
 fn main() -> Result<()> {
     let cli = Cli::parse();
+    let identity = config::resolve(
+        config::load()?.as_ref(),
+        cli.author.clone(),
+        cli.email.clone(),
+        cli.initials.clone(),
+    )?;
     if cli.diff.is_some() && !cli.docdiff_args.is_empty() {
         bail!("docdiff options after `--` only apply when docdiff runs here; drop --diff or the options");
     }
@@ -135,9 +144,9 @@ fn main() -> Result<()> {
         out: &cli.out,
         notes,
         opts: render::Opts {
-            author: cli.author.clone(),
-            initials: cli.initials.clone(),
-            email: cli.email.clone(),
+            author: identity.author,
+            initials: identity.initials,
+            email: identity.email,
             date: cli.date.clone().unwrap_or_else(package::now_iso),
         },
         onto_base: cli.onto == Onto::Base,

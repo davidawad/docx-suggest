@@ -125,7 +125,15 @@ fn docdiff(args: &[&str]) -> std::process::Output {
 /// `docx-suggest A B -o OUT [opts] [-- docdiff opts]`, docdiff run inside.
 fn suggest(a: &Path, b: &Path, out: &Path, opts: &[&str], docdiff_opts: &[&str]) -> std::process::Output {
     let mut c = Command::new(env!("CARGO_BIN_EXE_docx-suggest"));
-    c.env("DOCDIFF_BIN", docdiff_bin()).arg(a).arg(b).arg("-o").arg(out).args(opts);
+    c.env("DOCDIFF_BIN", docdiff_bin())
+        .env("XDG_CONFIG_HOME", out.with_extension("no-config"))
+        .env_remove("DOCX_SUGGEST_AUTHOR")
+        .env_remove("DOCX_SUGGEST_EMAIL")
+        .arg(a)
+        .arg(b)
+        .arg("-o")
+        .arg(out)
+        .args(opts);
     if !docdiff_opts.is_empty() {
         c.arg("--").args(docdiff_opts);
     }
@@ -372,4 +380,49 @@ fn checked_in_sample_renders_onto_revised_and_onto_base() {
         assert_eq!(comments.matches("<w:comment ").count(), 3, "{onto}");
         assert!(text(&p, "word/_rels/comments.xml.rels").contains("https://example.com/payment-terms"));
     }
+}
+
+fn suggest_with_config(d: &Dir, a: &Path, b: &Path, out: &Path, opts: &[&str]) -> std::process::Output {
+    let cfg = d.0.join("cfg");
+    std::fs::create_dir_all(cfg.join("docx-suggest")).unwrap();
+    std::fs::write(
+        cfg.join("docx-suggest/config.toml"),
+        "[[authors]]\nname = \"Listed Person\"\nemail = \"listed@x.test\"\ninitials = \"LP\"\n",
+    )
+    .unwrap();
+    Command::new(env!("CARGO_BIN_EXE_docx-suggest"))
+        .env("DOCDIFF_BIN", docdiff_bin())
+        .env("XDG_CONFIG_HOME", &cfg)
+        .env_remove("DOCX_SUGGEST_AUTHOR")
+        .env_remove("DOCX_SUGGEST_EMAIL")
+        .arg(a)
+        .arg(b)
+        .arg("-o")
+        .arg(out)
+        .args(opts)
+        .output()
+        .unwrap()
+}
+
+#[test]
+fn config_author_is_the_default_and_recorded() {
+    let d = Dir::new("whitelist-default");
+    let (a, b) = base_and_revised(&d);
+    let out = d.0.join("out.docx");
+    let res = suggest_with_config(&d, &a, &b, &out, &[]);
+    assert!(res.status.success(), "{}", String::from_utf8_lossy(&res.stderr));
+    let p = parts(&out);
+    assert!(text(&p, "word/document.xml").contains("w:author=\"Listed Person\""));
+    assert!(text(&p, "word/people.xml").contains("listed@x.test"));
+}
+
+#[test]
+fn config_refuses_an_unlisted_author_and_writes_nothing() {
+    let d = Dir::new("whitelist-refuse");
+    let (a, b) = base_and_revised(&d);
+    let out = d.0.join("out.docx");
+    let res = suggest_with_config(&d, &a, &b, &out, &["--author", "Claude"]);
+    assert!(!res.status.success());
+    assert!(String::from_utf8_lossy(&res.stderr).contains("not in the config's authors list"));
+    assert!(!out.exists());
 }
